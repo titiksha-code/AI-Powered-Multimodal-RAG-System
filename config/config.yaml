@@ -1,0 +1,48 @@
+# ==========================================================
+# Central configuration - AI Multimodal RAG System
+# Override any of these via environment variables (see .env.example)
+# ==========================================================
+
+app:
+  name: "Multimodal Knowledge Intelligence System"
+  version: "1.0.0"
+  debug: false
+
+ingestion:
+  chunk_size: 512
+  chunk_overlap: 64
+  ocr_lang: "eng"
+  max_file_size_mb: 50
+  supported_extensions: [".pdf", ".png", ".jpg", ".jpeg", ".txt", ".md"]
+
+embeddings:
+  text_model: "sentence-transformers/all-MiniLM-L6-v2"
+  vision_model: "ViT-B-32"
+  vision_pretrained: "laion2b_s34b_b79k"
+  embedding_dim_text: 384
+  embedding_dim_vision: 512
+
+vector_store:
+  backend: "qdrant"          # options: qdrant | chroma
+  host: "localhost"
+  port: 6333
+  collection_text: "kb_text_chunks"
+  collection_image: "kb_image_chunks"
+  distance_metric: "cosine"
+  top_k: 5
+  hybrid_alpha: 0.6          # weight between dense (semantic) and sparse (keyword) score
+
+llm:
+  provider: "local"          # options: local | openai | anthropic
+  model_name: "Qwen/Qwen2-VL-7B-Instruct"
+  temperature: 0.2
+  max_new_tokens: 768
+  system_prompt: >
+    You are a precise knowledge assistant. Answer strictly using the
+    provided multimodal context (text passages, table excerpts, and
+    image/diagram descriptions). Cite the source chunk id for every claim.
+    If the answer is not contained in the context, say so explicitly.
+
+logging:
+  level: "INFO"
+  log_file: "logs/app.log"
