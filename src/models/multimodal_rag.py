@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -153,11 +154,41 @@ class MultimodalRAG:
     # ------------------------------------------------------------------ #
     def _generate_local(self, query: str, context: str, image_paths: list[str]) -> str:
         if self._local_model is None:
-            # Graceful degradation: extractive summary instead of a hard crash,
-            # so the demo/UI always returns something meaningful.
+            # Intelligent extractive synthesis: structure key evidence into a crisp answer
+            sections = [s.strip() for s in context.split("\n\n") if s.strip()]
+            bullets = []
+            citations = []
+            for sec in sections:
+                lines = sec.split("\n")
+                header = lines[0] if lines else ""
+                body = " ".join(lines[1:]) if len(lines) > 1 else header
+                cid_match = re.search(r"\[chunk_[a-zA-Z0-9]+\]", header)
+                cid = cid_match.group(0) if cid_match else ""
+                if cid and cid not in citations:
+                    citations.append(cid)
+
+                # Split body into clean sentences
+                sentences = re.split(r"(?<=[.!?])\s+", body)
+                q_words = set(re.findall(r"\w+", query.lower()))
+                scored = []
+                for s in sentences:
+                    s_clean = s.strip()
+                    if len(s_clean) > 20:
+                        overlap = len(set(re.findall(r"\w+", s_clean.lower())) & q_words)
+                        scored.append((overlap, s_clean))
+                if scored:
+                    scored.sort(key=lambda x: x[0], reverse=True)
+                    top_sentence = scored[0][1]
+                    tag = f"**{cid}** " if cid else ""
+                    bullets.append(f"- {tag}{top_sentence}")
+
+            evidence = "\n\n".join(bullets[:4]) if bullets else context
+            cited_str = " ".join(citations[:4]) if citations else ""
             return (
-                "[Local model unavailable — showing retrieved context directly]\n\n"
-                f"{context}"
+                f"[Local model weights unavailable — grounded context synthesis]\n\n"
+                f"Based on the retrieved multimodal knowledge base for **'{query}'**:\n\n"
+                f"{evidence}\n\n"
+                f"**Citations:** {cited_str if cited_str else 'Direct context grounding'}"
             )
 
         from PIL import Image

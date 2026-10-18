@@ -8,7 +8,11 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-DC244C?style=for-the-badge)](https://qdrant.tech/)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/your-username/ai-multimodal-rag?style=for-the-badge&color=gold)](https://github.com/your-username/ai-multimodal-rag/stargazers)
+[![Stars](https://img.shields.io/github/stars/titiksha-code/AI-Powered-Multimodal-RAG-System?style=for-the-badge&color=gold)](https://github.com/titiksha-code/AI-Powered-Multimodal-RAG-System/stargazers)
+
+<p align="center">
+  <img src="demo_video.gif" alt="System Demo Preview" width="850">
+</p>
 
 > A Final Year Capstone Project — an end-to-end multimodal Retrieval-Augmented
 > Generation system that understands **text, tables, diagrams, and images**
@@ -129,8 +133,8 @@ ai-multimodal-rag/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/ai-multimodal-rag.git
-cd ai-multimodal-rag
+git clone https://github.com/titiksha-code/AI-Powered-Multimodal-RAG-System.git
+cd AI-Powered-Multimodal-RAG-System
 ```
 
 ### 2. Create and activate a virtual environment
@@ -157,21 +161,24 @@ pip install -r requirements.txt
 > - Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
 > - Windows: [Tesseract installer](https://github.com/UB-Mannheim/tesseract/wiki)
 
-### 4. Configure environment variables
+### 4. Configure environment variables (optional)
 
 ```bash
 cp .env.example .env
-# then edit .env with your Qdrant / OpenAI / Anthropic credentials as needed
+# Edit .env with your OpenAI / Anthropic credentials if using hosted Vision-LLMs
 ```
 
-### 5. (Optional) Start a local Qdrant instance
+### 5. Vector Store & Operating Modes
 
+The system operates in **Live Mode** out-of-the-box using embedded **ChromaDB** with local `all-MiniLM-L6-v2` and `open_clip` ViT-B-32 embeddings — **no external server or Docker container required**.
+
+If you prefer to use Qdrant for production deployments:
 ```bash
 docker run -p 6333:6333 qdrant/qdrant
 ```
+and set `backend: "qdrant"` in `config/config.yaml`.
 
-> If Qdrant isn't running, the dashboard automatically falls back to **Demo Mode**
-> with representative sample data — the full animated UI stays fully explorable.
+The dashboard features an interactive toggle between **🟢 Live Pipeline** (real embedding retrieval) and **🎭 Demo Mode** (simulated showcase).
 
 ### 6. Run the dashboard
 
@@ -219,4 +226,6 @@ Distributed under the MIT License. See `LICENSE` for details.
 
 ## 🙋 Author
 
-Built as a Final Year Capstone Project. Contributions, issues, and stars are welcome!
+**Titiksha Gupta**  
+Final Year Capstone Project — AI-Powered Multimodal Retrieval & Knowledge Intelligence System.  
+Contributions, issues, and stars are welcome!

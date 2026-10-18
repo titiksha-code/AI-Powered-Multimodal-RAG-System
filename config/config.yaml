@@ -23,7 +23,7 @@ embeddings:
   embedding_dim_vision: 512
 
 vector_store:
-  backend: "qdrant"          # options: qdrant | chroma
+  backend: "chroma"          # options: qdrant | chroma
   host: "localhost"
   port: 6333
   collection_text: "kb_text_chunks"

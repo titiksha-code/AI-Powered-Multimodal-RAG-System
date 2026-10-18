@@ -249,6 +249,11 @@
   animation: dotPulse 2s ease-in-out infinite;
 }
 
+.status-dot.demo {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
 @keyframes dotPulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }
@@ -262,3 +267,27 @@
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(124, 92, 255, 0.55); }
+
+/* ---------- Streamlit metric polish ---------- */
+[data-testid="stMetric"] {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+[data-testid="stMetricValue"] {
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  color: #22d3ee !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+[data-testid="stMetricLabel"] {
+  font-size: 0.74rem !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

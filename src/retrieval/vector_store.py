@@ -130,7 +130,15 @@ class VectorStore:
         self._content_cache: dict[str, str] = {}
 
         if backend == "qdrant":
-            self._init_qdrant(host, port)
+            try:
+                self._init_qdrant(host, port)
+            except Exception as exc:
+                logger.warning(
+                    f"Could not connect to Qdrant at {host}:{port} ({exc}). "
+                    "Auto-falling back to persistent local Chroma backend."
+                )
+                self.backend = "chroma"
+                self._init_chroma()
         elif backend == "chroma":
             self._init_chroma()
         else:
@@ -162,6 +170,40 @@ class VectorStore:
         self.client = chromadb.PersistentClient(path="./chroma_db")
         self.text_collection = self.client.get_or_create_collection(self.collection_text)
         self.image_collection = self.client.get_or_create_collection(self.collection_image)
+
+    @staticmethod
+    def _to_chroma_metadata(chunk: Chunk) -> dict[str, str | int | float | bool]:
+        meta: dict[str, str | int | float | bool] = {
+            "chunk_id": chunk.chunk_id,
+            "doc_id": chunk.doc_id,
+            "modality": chunk.modality,
+            "page_number": int(chunk.page_number),
+            "source_path": str(chunk.source_path or ""),
+        }
+        if isinstance(chunk.metadata, dict):
+            for k, v in chunk.metadata.items():
+                if isinstance(v, (str, int, float, bool)):
+                    meta[f"meta_{k}"] = v
+                else:
+                    meta[f"meta_{k}"] = str(v)
+        return meta
+
+    def count(self) -> dict[str, int]:
+        """Return total indexed points across text and image collections."""
+        if self.backend == "qdrant":
+            try:
+                t = self.client.get_collection(self.collection_text).points_count or 0
+                i = self.client.get_collection(self.collection_image).points_count or 0
+                return {"text": t, "image": i, "total": t + i}
+            except Exception:
+                return {"text": 0, "image": 0, "total": 0}
+        else:
+            try:
+                t = self.text_collection.count()
+                i = self.image_collection.count()
+                return {"text": t, "image": i, "total": t + i}
+            except Exception:
+                return {"text": 0, "image": 0, "total": 0}
 
     # ------------------------------------------------------------------ #
     # Indexing
@@ -201,20 +243,28 @@ class VectorStore:
                 ids=[c.chunk_id for c in chunks],
                 embeddings=vectors.tolist(),
                 documents=[c.content for c in chunks],
-                metadatas=[c.to_dict() for c in chunks],
+                metadatas=[self._to_chroma_metadata(c) for c in chunks],
             )
 
     def _index_image_chunks(self, chunks: list[Chunk]) -> None:
         from io import BytesIO
+        from pathlib import Path
 
         from PIL import Image
 
         pil_images = []
         valid_chunks = []
+        img_dir = Path("data/extracted_images")
+        img_dir.mkdir(parents=True, exist_ok=True)
+
         for c in chunks:
             if not c.image_bytes:
                 continue
             try:
+                img_path = img_dir / f"{c.chunk_id}.png"
+                if not img_path.exists():
+                    img_path.write_bytes(c.image_bytes)
+                c.source_path = str(img_path)
                 pil_images.append(Image.open(BytesIO(c.image_bytes)).convert("RGB"))
                 valid_chunks.append(c)
             except Exception as exc:  # noqa: BLE001
@@ -244,7 +294,7 @@ class VectorStore:
                 ids=[c.chunk_id for c in valid_chunks],
                 embeddings=vectors.tolist(),
                 documents=[c.content for c in valid_chunks],
-                metadatas=[c.to_dict() for c in valid_chunks],
+                metadatas=[self._to_chroma_metadata(c) for c in valid_chunks],
             )
 
     @staticmethod
@@ -291,13 +341,19 @@ class VectorStore:
             return [{"score": h.score, **h.payload} for h in hits]
         else:  # chroma
             coll = self.image_collection if is_image else self.text_collection
-            res = coll.query(query_embeddings=[vector.tolist()], n_results=top_k)
+            total_items = coll.count()
+            if total_items == 0:
+                return []
+            actual_k = min(top_k, total_items)
+            res = coll.query(query_embeddings=[vector.tolist()], n_results=actual_k)
             hits = []
-            for i in range(len(res["ids"][0])):
-                meta = res["metadatas"][0][i]
-                # Chroma returns squared L2 distance by default; convert to a similarity-ish score
-                dist = res["distances"][0][i]
-                hits.append({"score": 1.0 / (1.0 + dist), **meta})
+            if res and res.get("ids") and len(res["ids"]) > 0:
+                for i in range(len(res["ids"][0])):
+                    meta = res["metadatas"][0][i] if res.get("metadatas") else {}
+                    doc = res["documents"][0][i] if res.get("documents") else ""
+                    dist = res["distances"][0][i] if res.get("distances") else 0.0
+                    content = meta.get("content") or doc
+                    hits.append({"score": 1.0 / (1.0 + dist), "content": content, **meta})
             return hits
 
     def _hybrid_rescore(
