@@ -9,6 +9,7 @@
 [![Qdrant](https://img.shields.io/badge/Qdrant-VectorDB-DC244C?style=for-the-badge)](https://qdrant.tech/)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/titiksha-code/AI-Powered-Multimodal-RAG-System?style=for-the-badge&color=gold)](https://github.com/titiksha-code/AI-Powered-Multimodal-RAG-System/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/titiksha-code/AI-Powered-Multimodal-RAG-System/ci.yml?branch=main&label=CI&style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/titiksha-code/AI-Powered-Multimodal-RAG-System/actions)
 
 <p align="center">
   <img src="demo_video.gif" alt="System Demo Preview" width="850">
@@ -188,7 +189,15 @@ streamlit run app.py
 
 Then open **http://localhost:8501** in your browser.
 
-### 7. Run tests
+### 7. Run the FastAPI REST service
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+Interactive OpenAPI documentation will be available at **http://localhost:8000/docs**.
+
+### 8. Run tests
 
 ```bash
 pytest
